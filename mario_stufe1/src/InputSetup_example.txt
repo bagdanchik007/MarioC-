@@ -1,0 +1,22 @@
+// Beispiel: so werden Commands an Tasten gebunden (Aufruf z.B. in Game::Game()).
+// Diese Datei ist bewusst nicht Teil des Builds (keine .h) - reines Integrationsbeispiel.
+//
+// #include "InputHandler.h"
+// #include "Commands.h"
+//
+// void setupPlayerInput(InputHandler& input) {
+//     input.bindContinuous(sf::Keyboard::Left,  std::make_unique<MoveLeftCommand>());
+//     input.bindContinuous(sf::Keyboard::Right, std::make_unique<MoveRightCommand>());
+//
+//     input.bindOnPressed(sf::Keyboard::Up,     std::make_unique<JumpCommand>());
+//     input.bindOnReleased(sf::Keyboard::Up,    std::make_unique<JumpReleaseCommand>());
+//     input.bindOnPressed(sf::Keyboard::X,      std::make_unique<AttackCommand>());
+// }
+//
+// Im Game-Loop dann pro Frame:
+//     while (window.pollEvent(event)) {
+//         input.handleEvent(event, player);   // diskrete Aktionen: Jump, Attack
+//     }
+//     input.pollContinuousInput(player);       // kontinuierliche Aktionen: Laufen
+//     player.update(deltaTime);
+//     player.render(window);
