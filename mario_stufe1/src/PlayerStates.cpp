@@ -83,8 +83,7 @@ void JumpState::enter(Player& player) {
     player.getAnimationController().play("jump");
 }
 
-void JumpState::update(Player& player, float deltaTime) {
-    player.applyGravity(deltaTime);
+void JumpState::update(Player& player, float /*deltaTime*/) {
     if (player.getVelocity().y >= 0.f) {
         player.setState(std::make_unique<FallState>());
     }
@@ -116,8 +115,7 @@ void FallState::enter(Player& player) {
     player.getAnimationController().play("fall");
 }
 
-void FallState::update(Player& player, float deltaTime) {
-    player.applyGravity(deltaTime);
+void FallState::update(Player& player, float /*deltaTime*/) {
     if (player.isOnGround()) {
         if (player.getVelocity().x != 0.f) {
             player.setState(std::make_unique<RunState>());
@@ -154,9 +152,6 @@ void AttackState::enter(Player& player) {
 
 void AttackState::update(Player& player, float deltaTime) {
     m_elapsed += deltaTime;
-    if (!player.isOnGround()) {
-        player.applyGravity(deltaTime); // Angriff in der Luft faellt weiter normal.
-    }
     if (m_elapsed >= DURATION) {
         if (player.isOnGround()) {
             player.setState(std::make_unique<IdleState>());

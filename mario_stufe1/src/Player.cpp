@@ -7,7 +7,7 @@ const sf::Vector2f Player::SIZE = {16.f, 16.f};
 
 Player::Player(sf::Vector2f startPosition)
     : Entity(startPosition) {
-    updateBounds(SIZE);
+    setSize(SIZE);
     m_sprite.setPosition(m_position);
     // Startzustand: Idle. enter() wird hier explizit aufgerufen, da der
     // Konstruktor nicht ueber setState laeuft (kein "voriger" State zum exit()-en).
@@ -19,20 +19,26 @@ void Player::update(float deltaTime) {
     if (!m_alive) {
         return;
     }
+
+    // Gravitation wirkt permanent, unabhaengig vom State. Das CollisionSystem
+    // (Etappe 2) hebt sie beim Landen wieder auf und setzt onGround - dadurch
+    // muessen Idle/Run selbst keine Gravitation kennen, nur Jump/Fall/Attack
+    // reagieren auf ihre Auswirkung (steigende Fallgeschwindigkeit).
+    applyGravity(deltaTime);
+
     m_currentState->update(*this, deltaTime);
 
-    // Integration der Physik: Geschwindigkeit -> Position.
-    // Die eigentliche Kollisionsaufloesung passiert erst in Etappe 2 (AABB).
-    m_position += m_velocity * deltaTime;
-    updateBounds(SIZE);
-
+    // WICHTIG: Position wird HIER NICHT mehr integriert (kein m_position +=
+    // velocity*deltaTime). Das uebernimmt jetzt CollisionSystem::resolve(),
+    // das von Game::update() nach diesem Aufruf explizit ausgefuehrt wird -
+    // nur dort kann waehrend der Bewegung gegen die Tilemap geprueft werden.
     m_animationController.update(deltaTime);
-    m_sprite.setPosition(m_position);
-    m_sprite.setScale(m_facingRight ? 1.f : -1.f, 1.f);
 }
 
 void Player::render(sf::RenderWindow& window) {
     m_animationController.applyTo(m_sprite);
+    m_sprite.setPosition(m_position);
+    m_sprite.setScale(m_facingRight ? 1.f : -1.f, 1.f);
     window.draw(m_sprite);
 }
 
