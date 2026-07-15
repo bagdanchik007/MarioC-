@@ -16,6 +16,14 @@ void AnimationController::play(const std::string& name, bool forceRestart) {
     it->second->reset();
 }
 
+void AnimationController::setOnAnimationFinished(const std::string& name, std::function<void()> callback) {
+    auto it = m_animations.find(name);
+    if (it == m_animations.end()) {
+        return; // Unbekannte Animation - bewusst kein Crash, nur ignorieren.
+    }
+    it->second->setOnFinished(std::move(callback));
+}
+
 void AnimationController::update(float deltaTime) {
     auto it = m_animations.find(m_currentAnimationName);
     if (it != m_animations.end()) {

@@ -10,6 +10,9 @@
 #include "Fireball.h"
 #include "EntityManager.h"
 #include "IGameState.h"
+#include "EventBus.h"
+#include "SoundManager.h"
+#include "ParticleSystem.h"
 
 // Game: Wurzel-Klasse UND Kontext der Game State Machine. Haelt alle
 // Top-Level-Systeme (Fenster, Welt, Meta-Daten wie Score/Leben/Timer) und
@@ -35,6 +38,10 @@ public:
     EntityManager<Item>& getItems() noexcept { return m_items; }
     EntityManager<Fireball>& getFireballs() noexcept { return m_fireballs; }
 
+    EventBus& getEvents() noexcept { return m_events; }
+    SoundManager& getSounds() noexcept { return m_sounds; }
+    ParticleSystem& getParticles() noexcept { return m_particles; }
+
     int getScore() const noexcept { return m_score; }
     void addScore(int amount) noexcept { m_score += amount; }
     int getCoinCount() const noexcept { return m_coinCount; }
@@ -58,6 +65,7 @@ private:
     void update(float deltaTime);
     void render();
     void spawnDemoEntities();
+    void subscribeToEvents(); // Etappe 5: verdrahtet Sound/Partikel mit dem EventBus
 
     sf::RenderWindow m_window;
     sf::Clock m_clock;
@@ -72,6 +80,10 @@ private:
     EntityManager<Enemy> m_enemies;
     EntityManager<Item> m_items;
     EntityManager<Fireball> m_fireballs;
+
+    EventBus m_events;
+    SoundManager m_sounds;
+    ParticleSystem m_particles;
 
     int m_score{0};
     int m_coinCount{0};

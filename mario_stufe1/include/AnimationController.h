@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include <string>
 #include <memory>
+#include <functional>
 #include <SFML/Graphics.hpp>
 #include "Animation.h"
 
@@ -14,6 +15,12 @@ public:
 
     // Wechselt nur die Animation, wenn sich der Name aendert (verhindert Reset-Flackern).
     void play(const std::string& name, bool forceRestart = false);
+
+    // Registriert einen Callback, der einmalig ausgeloest wird, wenn die
+    // benannte (nicht-loopende) Animation ihr letztes Bild erreicht.
+    // Bequemlichkeitsfunktion - entspricht getAnimation(name)->setOnFinished(...),
+    // ohne dass der Aufrufer sich um "Animation existiert nicht" kuemmern muss.
+    void setOnAnimationFinished(const std::string& name, std::function<void()> callback);
 
     void update(float deltaTime);
     void applyTo(sf::Sprite& sprite) const;

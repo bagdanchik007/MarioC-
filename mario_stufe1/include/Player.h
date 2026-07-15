@@ -56,6 +56,16 @@ public:
     // Setzt den Spieler auf Startzustand zurueck (neues Leben / neues Spiel).
     void respawn(sf::Vector2f position);
 
+    // --- Event-Marker (Etappe 5) ---
+    // Player kennt den EventBus NICHT (sonst Abhaengigkeit Player -> Game
+    // umgekehrt) - stattdessen setzen States nur ein Flag (analog zu
+    // requestFireball), das PlayingState pro Frame abholt und daraus ein
+    // echtes GameEvent macht.
+    void markJumped() noexcept { m_jumpEventPending = true; }
+    bool consumeJumpEvent() noexcept;
+    void markLanded() noexcept { m_landedEventPending = true; }
+    bool consumeLandedEvent() noexcept;
+
     AnimationController& getAnimationController() noexcept { return m_animationController; }
 
     static constexpr float WALK_SPEED = 150.f;
@@ -74,4 +84,6 @@ private:
     PowerState m_powerState{PowerState::Small};
     float m_invulnerabilityTimer{0.f};
     bool m_fireballRequested{false};
+    bool m_jumpEventPending{false};
+    bool m_landedEventPending{false};
 };

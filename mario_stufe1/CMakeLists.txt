@@ -24,7 +24,7 @@ file(GLOB SOURCES ${CMAKE_SOURCE_DIR}/src/*.cpp)
 add_executable(MarioClone ${SOURCES})
 
 target_include_directories(MarioClone PRIVATE ${CMAKE_SOURCE_DIR}/include)
-target_link_libraries(MarioClone PRIVATE sfml-graphics sfml-window sfml-system)
+target_link_libraries(MarioClone PRIVATE sfml-graphics sfml-window sfml-system sfml-audio)
 
 target_compile_options(MarioClone PRIVATE
     $<$<CXX_COMPILER_ID:MSVC>:/W4>

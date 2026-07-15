@@ -24,12 +24,20 @@ void Animation::update(float deltaTime) {
             }
         }
     }
+
+    if (m_finished && !m_finishedCallbackFired) {
+        m_finishedCallbackFired = true;
+        if (m_onFinished) {
+            m_onFinished();
+        }
+    }
 }
 
 void Animation::reset() {
     m_elapsedTime = 0.f;
     m_currentFrameIndex = 0;
     m_finished = false;
+    m_finishedCallbackFired = false;
 }
 
 sf::IntRect Animation::getCurrentFrame() const {

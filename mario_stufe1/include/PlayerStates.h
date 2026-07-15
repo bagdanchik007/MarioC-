@@ -31,6 +31,7 @@ public:
 class FallState final : public IPlayerState {
 public:
     void enter(Player& player) override;
+    void exit(Player& player) override;
     void update(Player& player, float deltaTime) override;
     void handleAction(Player& player, PlayerAction action) override;
     const char* name() const override { return "fall"; }

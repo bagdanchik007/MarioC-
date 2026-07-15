@@ -6,6 +6,7 @@ class Player;
 class Enemy;
 class Item;
 class Fireball;
+class EventBus;
 
 // Ergebnis des Einsammelns von Items in einem Frame.
 struct ItemPickupResult {
@@ -17,23 +18,22 @@ struct ItemPickupResult {
 // Eigenes System statt Interaktionslogik in Player/Enemy/Item zu verstreuen:
 // "was passiert bei Kontakt" ist Spielregel-Logik, kein Bestandteil der
 // beteiligten Objekte selbst (die kennen sich gegenseitig nicht).
+//
+// Etappe 5: publiziert zusaetzlich GameEvents (ueber den uebergebenen
+// EventBus) fuer alles, was Sound/Partikel ausloesen soll - InteractionSystem
+// selbst kennt weder SoundManager noch ParticleSystem, nur den Bus.
 class InteractionSystem {
 public:
-    // Stomp -> Enemy::squish() + Punkte + Bounce. Kontakt von der Seite ->
-    // Player::takeDamage() + Knockback. Rueckgabe: in diesem Frame erzielte Punkte.
-    static int resolvePlayerEnemies(Player& player, std::vector<std::unique_ptr<Enemy>>& enemies);
+    static int resolvePlayerEnemies(Player& player, std::vector<std::unique_ptr<Enemy>>& enemies,
+                                     EventBus& events);
 
-    // Sammelt beruehrte Items ein und wendet ihren Effekt auf den Player an
-    // (Coin -> nur Punkte, Mushroom/FireFlower -> Player::applyPowerUp).
-    static ItemPickupResult resolvePlayerItems(Player& player, std::vector<std::unique_ptr<Item>>& items);
+    static ItemPickupResult resolvePlayerItems(Player& player, std::vector<std::unique_ptr<Item>>& items,
+                                                EventBus& events);
 
-    // Fireball trifft Enemy -> Enemy::squish() + Fireball verbraucht sich.
-    // Rueckgabe: in diesem Frame erzielte Punkte.
     static int resolveFireballEnemies(std::vector<std::unique_ptr<Fireball>>& fireballs,
-                                       std::vector<std::unique_ptr<Enemy>>& enemies);
+                                       std::vector<std::unique_ptr<Enemy>>& enemies,
+                                       EventBus& events);
 
 private:
-    // Stomp-Erkennung: Player bewegt sich abwaerts UND seine untere Kante
-    // liegt (mit kleiner Toleranz) an oder ueber der oberen Kante des Gegners.
     static bool isStomp(const Player& player, const Enemy& enemy);
 };

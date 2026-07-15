@@ -158,6 +158,22 @@ bool Player::consumeFireballRequest() noexcept {
     return true;
 }
 
+bool Player::consumeJumpEvent() noexcept {
+    if (!m_jumpEventPending) {
+        return false;
+    }
+    m_jumpEventPending = false;
+    return true;
+}
+
+bool Player::consumeLandedEvent() noexcept {
+    if (!m_landedEventPending) {
+        return false;
+    }
+    m_landedEventPending = false;
+    return true;
+}
+
 sf::Vector2f Player::getFireballSpawnPosition() const {
     const float offsetX = m_facingRight ? getSize().x : -Player::SIZE.x / 2.f;
     return sf::Vector2f(getPosition().x + offsetX, getPosition().y + getSize().y / 2.f);

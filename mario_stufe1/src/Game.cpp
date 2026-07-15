@@ -49,9 +49,48 @@ Game::Game()
     m_input.bindOnPressed(sf::Keyboard::X,      std::make_unique<AttackCommand>());
 
     spawnDemoEntities();
+    subscribeToEvents();
+
+    // Assets fehlen bisher komplett (kein assets/-Ordner im Projekt) - das ist
+    // erwartet: registerSound()/playMusic() geben dann sauber false zurueck,
+    // ohne das Spiel zu crashen (siehe SoundManager-Kommentar). Sobald echte
+    // .wav/.ogg-Dateien dazukommen, muessen nur diese Pfade stimmen.
+    m_sounds.registerSound("jump", "assets/sfx/jump.wav");
+    m_sounds.registerSound("stomp", "assets/sfx/stomp.wav");
+    m_sounds.registerSound("coin", "assets/sfx/coin.wav");
+    m_sounds.registerSound("powerup", "assets/sfx/powerup.wav");
+    m_sounds.registerSound("fireball", "assets/sfx/fireball.wav");
+    m_sounds.playMusic("assets/music/theme.ogg");
 
     m_currentState = std::make_unique<MenuState>();
     m_currentState->enter(*this);
+}
+
+void Game::subscribeToEvents() {
+    m_events.subscribe(EventType::EnemyStomped, [this](const GameEvent& e) {
+        m_sounds.play("stomp");
+        m_particles.emitBurst(e.position, sf::Color(139, 69, 19), 10);
+    });
+    m_events.subscribe(EventType::CoinCollected, [this](const GameEvent& e) {
+        m_sounds.play("coin");
+        m_particles.emitBurst(e.position, sf::Color(255, 215, 0), 8);
+    });
+    m_events.subscribe(EventType::PlayerPoweredUp, [this](const GameEvent& e) {
+        m_sounds.play("powerup");
+        m_particles.emitBurst(e.position, sf::Color(255, 255, 255), 14);
+    });
+    m_events.subscribe(EventType::PlayerJumped, [this](const GameEvent& /*e*/) {
+        m_sounds.play("jump");
+    });
+    m_events.subscribe(EventType::PlayerLanded, [this](const GameEvent& e) {
+        m_particles.emitBurst(e.position, sf::Color(180, 180, 180), 5);
+    });
+    m_events.subscribe(EventType::PlayerDamaged, [this](const GameEvent& e) {
+        m_particles.emitBurst(e.position, sf::Color(220, 40, 40), 10);
+    });
+    m_events.subscribe(EventType::FireballFired, [this](const GameEvent& /*e*/) {
+        m_sounds.play("fireball");
+    });
 }
 
 void Game::spawnDemoEntities() {

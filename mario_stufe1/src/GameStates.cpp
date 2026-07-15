@@ -57,6 +57,15 @@ void PlayingState::update(Game& game, float deltaTime) {
     const CollisionResult playerCollision = CollisionSystem::resolve(player, level.getTilemap(), deltaTime);
     player.setOnGround(playerCollision.onGround);
 
+    // Event-Marker abholen, die States nur GESETZT haben (Player kennt den
+    // EventBus nicht) - hier werden daraus echte, publizierte GameEvents.
+    if (player.consumeJumpEvent()) {
+        game.getEvents().publish({EventType::PlayerJumped, player.getPosition(), 0});
+    }
+    if (player.consumeLandedEvent()) {
+        game.getEvents().publish({EventType::PlayerLanded, player.getPosition(), 0});
+    }
+
     // 2) Enemies: gleiche Physik-Pipeline, wiederverwendet ueber CollisionSystem.
     for (auto& enemyPtr : game.getEnemies().getAll()) {
         Enemy& enemy = *enemyPtr;
@@ -73,14 +82,18 @@ void PlayingState::update(Game& game, float deltaTime) {
     game.getFireballs().update(deltaTime);
     if (player.consumeFireballRequest()) {
         const float direction = player.isFacingRight() ? 1.f : -1.f;
-        game.getFireballs().add(std::make_unique<Fireball>(player.getFireballSpawnPosition(), direction));
+        const sf::Vector2f spawnPos = player.getFireballSpawnPosition();
+        game.getFireballs().add(std::make_unique<Fireball>(spawnPos, direction));
+        game.getEvents().publish({EventType::FireballFired, spawnPos, 0});
     }
 
     // 5) Interaktionen: NACH der Bewegung, damit Positionen fuer diesen Frame final sind.
-    game.addScore(InteractionSystem::resolvePlayerEnemies(player, game.getEnemies().getAll()));
-    game.addScore(InteractionSystem::resolveFireballEnemies(game.getFireballs().getAll(), game.getEnemies().getAll()));
+    game.addScore(InteractionSystem::resolvePlayerEnemies(player, game.getEnemies().getAll(), game.getEvents()));
+    game.addScore(InteractionSystem::resolveFireballEnemies(game.getFireballs().getAll(), game.getEnemies().getAll(),
+                                                             game.getEvents()));
 
-    const ItemPickupResult pickup = InteractionSystem::resolvePlayerItems(player, game.getItems().getAll());
+    const ItemPickupResult pickup = InteractionSystem::resolvePlayerItems(player, game.getItems().getAll(),
+                                                                           game.getEvents());
     game.addCoins(pickup.coinsCollected);
     game.addScore(pickup.scoreGained);
 
@@ -88,6 +101,9 @@ void PlayingState::update(Game& game, float deltaTime) {
     game.getEnemies().removeDead();
     game.getItems().removeDead();
     game.getFireballs().removeDead();
+
+    // 7) Partikel: eigener Lebenszyklus, unabhaengig von Entities.
+    game.getParticles().update(deltaTime);
 
     game.getCamera().follow(player.getPosition(), deltaTime);
 
@@ -134,6 +150,7 @@ void PlayingState::render(Game& game, sf::RenderWindow& window) {
     game.getEnemies().render(window);
     game.getFireballs().render(window);
     game.getPlayer().render(window);
+    game.getParticles().render(window);
 
     window.display();
 }

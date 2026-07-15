@@ -81,6 +81,7 @@ void RunState::handleAction(Player& player, PlayerAction action) {
 // ----------------------------------------------------------------------------
 void JumpState::enter(Player& player) {
     player.getAnimationController().play("jump");
+    player.markJumped(); // Etappe 5: Event-Marker fuer Sound/Partikel beim Absprung
 }
 
 void JumpState::update(Player& player, float /*deltaTime*/) {
@@ -113,6 +114,13 @@ void JumpState::handleAction(Player& player, PlayerAction action) {
 // ----------------------------------------------------------------------------
 void FallState::enter(Player& player) {
     player.getAnimationController().play("fall");
+}
+
+void FallState::exit(Player& player) {
+    // "Fall verlassen" bedeutet immer "gelandet" (der einzige Ausgang aus
+    // FallState ist ueber isOnGround() in FallState::update) - deshalb reicht
+    // exit() hier, ohne zusaetzliche Bedingung zu pruefen.
+    player.markLanded();
 }
 
 void FallState::update(Player& player, float /*deltaTime*/) {
