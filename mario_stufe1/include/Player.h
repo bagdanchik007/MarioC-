@@ -5,6 +5,7 @@
 #include "IPlayerState.h"
 #include "PlayerAction.h"
 #include "AnimationController.h"
+#include "PhysicsConstants.h"
 
 // Player: konkrete Entity mit Physik, State Machine und Animation.
 // Bewusst KEINE ECS-Komponente in Etappe 1 - Vererbung von Entity reicht fuer
@@ -39,8 +40,6 @@ public:
 
     static constexpr float WALK_SPEED = 150.f;
     static constexpr float JUMP_VELOCITY = -420.f;
-    static constexpr float GRAVITY = 980.f;
-    static constexpr float MAX_FALL_SPEED = 600.f;
     static const sf::Vector2f SIZE; // Hitbox in Pixeln (Mario-typisch klein), definiert in Player.cpp
 
 private:

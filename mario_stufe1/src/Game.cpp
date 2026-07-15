@@ -1,15 +1,16 @@
 #include "../include/Game.h"
 #include "../include/Commands.h"
 #include "../include/CollisionSystem.h"
+#include "../include/InteractionSystem.h"
 #include <memory>
 
 namespace {
 
-// Baut ein kleines Demo-Level fuer Etappe 2: Boden mit einer Luecke (zum
-// Testen des Fallens), eine schwebende Plattform (zum Testen von Sprung +
-// Landung in der Luft) und ein Spawn-Marker. In Etappe 6 wird das durch
-// echtes Laden aus JSON-Dateien ersetzt - Level/Tilemap kennen den Unterschied
-// nicht, sie bekommen ohnehin nur einen vector<string>.
+// Baut ein kleines Demo-Level: Boden mit Luecke (Fallen testen), eine
+// schwebende Plattform (Sprung + Landung in der Luft testen) und ein
+// Spawn-Marker. In Etappe 6 wird das durch echtes Laden aus JSON ersetzt -
+// Level/Tilemap kennen den Unterschied nicht, sie bekommen ohnehin nur
+// einen vector<string>.
 std::vector<std::string> buildDemoLevelLayout() {
     constexpr int width = 50;
     constexpr int height = 20;
@@ -35,7 +36,7 @@ std::vector<std::string> buildDemoLevelLayout() {
 } // namespace
 
 Game::Game()
-    : m_window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Mario Clone - Etappe 2")
+    : m_window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Mario Clone - Etappe 3")
     , m_level(buildDemoLevelLayout(), TILE_SIZE)
     , m_player(m_level.getPlayerSpawn())
     , m_camera(sf::Vector2f(static_cast<float>(WINDOW_WIDTH), static_cast<float>(WINDOW_HEIGHT)),
@@ -47,6 +48,21 @@ Game::Game()
     m_input.bindOnPressed(sf::Keyboard::Up,     std::make_unique<JumpCommand>());
     m_input.bindOnReleased(sf::Keyboard::Up,    std::make_unique<JumpReleaseCommand>());
     m_input.bindOnPressed(sf::Keyboard::X,      std::make_unique<AttackCommand>());
+
+    spawnDemoEntities();
+}
+
+void Game::spawnDemoEntities() {
+    const float floorRow = static_cast<float>(m_level.getTilemap().getHeight() - 3);
+
+    m_enemies.add(std::make_unique<Enemy>(EnemyType::Goomba,
+        sf::Vector2f(15.f * TILE_SIZE, floorRow * TILE_SIZE)));
+    m_enemies.add(std::make_unique<Enemy>(EnemyType::Goomba,
+        sf::Vector2f(35.f * TILE_SIZE, floorRow * TILE_SIZE)));
+
+    // Coin ueber der schwebenden Plattform (col 28-33, siehe buildDemoLevelLayout)
+    m_coins.add(std::make_unique<Coin>(sf::Vector2f(30.f * TILE_SIZE, (floorRow - 5.f) * TILE_SIZE)));
+    m_coins.add(std::make_unique<Coin>(sf::Vector2f(10.f * TILE_SIZE, (floorRow - 1.f) * TILE_SIZE)));
 }
 
 void Game::run() {
@@ -71,18 +87,35 @@ void Game::processEvents() {
 void Game::update(float deltaTime) {
     m_input.pollContinuousInput(m_player);
 
-    // Reihenfolge ist entscheidend:
-    // 1) Player::update() wendet Gravitation an und laesst den aktuellen
-    //    State (mit dem onGround-Wert vom LETZTEN Frame) reagieren.
-    // 2) CollisionSystem::resolve() bewegt die Entity tatsaechlich und
-    //    loest Kollisionen gegen die Tilemap auf - erst hier "passiert" die
-    //    Bewegung wirklich, mit korrekter Kollisionsantwort.
-    // 3) Das Ergebnis (onGround) wird fuer den NAECHSTEN Frame gespeichert.
+    // 1) Player: Gravitation + State-Update (reagiert auf onGround vom LETZTEN Frame).
     m_player.update(deltaTime);
-    const bool onGround = CollisionSystem::resolve(m_player, m_level.getTilemap(), deltaTime);
-    m_player.setOnGround(onGround);
+    const CollisionResult playerCollision = CollisionSystem::resolve(m_player, m_level.getTilemap(), deltaTime);
+    m_player.setOnGround(playerCollision.onGround);
+
+    // 2) Enemies: gleiche Physik-Pipeline wie der Player, wiederverwendet
+    //    ueber CollisionSystem (arbeitet auf Entity&, kennt weder Player noch Enemy).
+    for (auto& enemyPtr : m_enemies.getAll()) {
+        Enemy& enemy = *enemyPtr;
+        enemy.update(deltaTime);
+        const CollisionResult enemyCollision = CollisionSystem::resolve(enemy, m_level.getTilemap(), deltaTime);
+        enemy.setOnGround(enemyCollision.onGround);
+        enemy.setHitWall(enemyCollision.hitWall);
+    }
+
+    // 3) Coins: keine Physik/Kollision noetig, nur eigenes Update (Schweb-Animation).
+    m_coins.update(deltaTime);
+
+    // 4) Interaktionen: NACH der Bewegung, damit Positionen fuer diesen Frame final sind.
+    InteractionSystem::resolvePlayerEnemies(m_player, m_enemies.getAll());
+    m_coinCount += InteractionSystem::resolvePlayerCoins(m_player, m_coins.getAll());
+
+    // 5) Tote Entities entfernen (erst NACH den Interaktionen, die isAlive() lesen).
+    m_enemies.removeDead();
+    m_coins.removeDead();
 
     m_camera.follow(m_player.getPosition(), deltaTime);
+
+    m_window.setTitle("Mario Clone - Etappe 3 | Coins: " + std::to_string(m_coinCount));
 }
 
 void Game::render() {
@@ -90,6 +123,8 @@ void Game::render() {
     m_window.setView(m_camera.getView());
 
     m_level.render(m_window);
+    m_coins.render(m_window);
+    m_enemies.render(m_window);
     m_player.render(m_window);
 
     m_window.display();

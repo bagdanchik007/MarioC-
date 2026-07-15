@@ -57,7 +57,7 @@ const char* Player::getStateName() const {
 }
 
 void Player::applyGravity(float deltaTime) {
-    m_velocity.y = std::min(m_velocity.y + GRAVITY * deltaTime, MAX_FALL_SPEED);
+    m_velocity.y = std::min(m_velocity.y + Physics::GRAVITY * deltaTime, Physics::MAX_FALL_SPEED);
 }
 
 void Player::jump() {

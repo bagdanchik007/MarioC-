@@ -2,18 +2,21 @@
 #include "../include/Entity.h"
 #include <cmath>
 
-bool CollisionSystem::resolve(Entity& entity, const Tilemap& tilemap, float deltaTime) {
-    resolveAxisX(entity, tilemap, deltaTime);
-    return resolveAxisY(entity, tilemap, deltaTime);
+CollisionResult CollisionSystem::resolve(Entity& entity, const Tilemap& tilemap, float deltaTime) {
+    CollisionResult result;
+    result.hitWall = resolveAxisX(entity, tilemap, deltaTime);
+    result.onGround = resolveAxisY(entity, tilemap, deltaTime);
+    return result;
 }
 
-void CollisionSystem::resolveAxisX(Entity& entity, const Tilemap& tilemap, float deltaTime) {
+bool CollisionSystem::resolveAxisX(Entity& entity, const Tilemap& tilemap, float deltaTime) {
     sf::Vector2f pos = entity.getPosition();
     pos.x += entity.getVelocity().x * deltaTime;
     entity.setPosition(pos);
 
     const float tileSize = tilemap.getTileSize();
     sf::FloatRect bounds = entity.getBounds();
+    bool hitWall = false;
 
     const int firstCol = static_cast<int>(std::floor(bounds.left / tileSize));
     const int lastCol  = static_cast<int>(std::floor((bounds.left + bounds.width) / tileSize));
@@ -35,15 +38,17 @@ void CollisionSystem::resolveAxisX(Entity& entity, const Tilemap& tilemap, float
 
             const sf::Vector2f velocity = entity.getVelocity();
             if (velocity.x > 0.f) {
-                pos.x -= intersection.width;  // Kollision von links -> nach links rausschieben
+                pos.x -= intersection.width;
             } else if (velocity.x < 0.f) {
-                pos.x += intersection.width;  // Kollision von rechts -> nach rechts rausschieben
+                pos.x += intersection.width;
             }
             entity.setPosition(pos);
             entity.setVelocity({0.f, velocity.y});
-            bounds = entity.getBounds(); // Bounds nach Korrektur neu holen fuer weitere Tile-Checks
+            bounds = entity.getBounds();
+            hitWall = true;
         }
     }
+    return hitWall;
 }
 
 bool CollisionSystem::resolveAxisY(Entity& entity, const Tilemap& tilemap, float deltaTime) {
@@ -75,10 +80,10 @@ bool CollisionSystem::resolveAxisY(Entity& entity, const Tilemap& tilemap, float
 
             const sf::Vector2f velocity = entity.getVelocity();
             if (velocity.y > 0.f) {
-                pos.y -= intersection.height; // von oben auf ein Tile gefallen -> Boden gefunden
+                pos.y -= intersection.height;
                 grounded = true;
             } else if (velocity.y < 0.f) {
-                pos.y += intersection.height; // gegen die Decke gesprungen
+                pos.y += intersection.height;
             }
             entity.setPosition(pos);
             entity.setVelocity({velocity.x, 0.f});

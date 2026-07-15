@@ -3,23 +3,24 @@
 
 class Entity;
 
+// Ergebnis einer Kollisionsaufloesung. hitWall wird von der Enemy-Patrol-KI
+// genutzt (Umdrehen an Waenden), onGround von Player UND Enemy (Gravitation/
+// Sprung-Logik).
+struct CollisionResult {
+    bool onGround = false;
+    bool hitWall = false;
+};
+
 // Loest AABB-Kollisionen zwischen einer Entity und der Tilemap auf.
 // Separate-Axis-Sweep: X und Y werden UNABHAENGIG voneinander bewegt und
-// aufgeloest (erst X, dann Y). Das verhindert das klassische Tunneling-Problem
-// bei diagonaler Bewegung (z.B. beim Sprung gegen eine Wand) und macht die
-// Aufloesung fuer jede Achse einzeln trivial nachvollziehbar.
-//
-// Statische Klasse ohne State: das System selbst besitzt nichts, es operiert
-// nur auf der uebergebenen Entity und Tilemap. Damit ist es fuer beliebig
-// viele Entities (Player, spaeter Enemies) wiederverwendbar.
+// aufgeloest (erst X, dann Y) - verhindert Tunneling bei diagonaler Bewegung.
+// Statische Klasse ohne State: arbeitet nur auf der uebergebenen Entity und
+// Tilemap, daher fuer beliebig viele Entities wiederverwendbar (Player, Enemy).
 class CollisionSystem {
 public:
-    // Bewegt die Entity um velocity*deltaTime (in zwei Schritten, X dann Y)
-    // und loest dabei Kollisionen mit soliden Tiles auf.
-    // Rueckgabewert: steht die Entity danach auf einem soliden Tile (Boden)?
-    static bool resolve(Entity& entity, const Tilemap& tilemap, float deltaTime);
+    static CollisionResult resolve(Entity& entity, const Tilemap& tilemap, float deltaTime);
 
 private:
-    static void resolveAxisX(Entity& entity, const Tilemap& tilemap, float deltaTime);
-    static bool resolveAxisY(Entity& entity, const Tilemap& tilemap, float deltaTime);
+    static bool resolveAxisX(Entity& entity, const Tilemap& tilemap, float deltaTime); // -> hitWall
+    static bool resolveAxisY(Entity& entity, const Tilemap& tilemap, float deltaTime); // -> onGround
 };
