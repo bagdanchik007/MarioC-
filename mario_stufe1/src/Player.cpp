@@ -20,6 +20,10 @@ void Player::update(float deltaTime) {
         return;
     }
 
+    if (m_invulnerabilityTimer > 0.f) {
+        m_invulnerabilityTimer -= deltaTime;
+    }
+
     // Gravitation wirkt permanent, unabhaengig vom State. Das CollisionSystem
     // (Etappe 2) hebt sie beim Landen wieder auf und setzt onGround - dadurch
     // muessen Idle/Run selbst keine Gravitation kennen, nur Jump/Fall/Attack
@@ -82,4 +86,90 @@ void Player::moveHorizontal(float direction) {
 
 void Player::stopHorizontal() {
     m_velocity.x = 0.f;
+}
+
+namespace {
+sf::Vector2f sizeForPowerState(PowerState state) {
+    switch (state) {
+        case PowerState::Small: return {16.f, 16.f};
+        case PowerState::Big:
+        case PowerState::Fire: return {16.f, 28.f};
+    }
+    return {16.f, 16.f};
+}
+} // namespace
+
+void Player::setPowerState(PowerState newState) {
+    const sf::Vector2f oldSize = getSize();
+    const sf::Vector2f newSize = sizeForPowerState(newState);
+
+    if (newSize.y != oldSize.y) {
+        // Beim Wachsen/Schrumpfen bleiben die Fuesse am Boden - dafuer wird
+        // die Position um die Hoehendifferenz nach oben (Wachsen) bzw.
+        // unten (Schrumpfen) verschoben, statt am oberen Rand zu wachsen.
+        sf::Vector2f pos = getPosition();
+        pos.y -= (newSize.y - oldSize.y);
+        setPosition(pos);
+    }
+
+    m_powerState = newState;
+    setSize(newSize);
+}
+
+void Player::applyPowerUp(ItemType type) {
+    switch (type) {
+        case ItemType::Mushroom:
+            if (m_powerState == PowerState::Small) {
+                setPowerState(PowerState::Big);
+            }
+            break;
+        case ItemType::FireFlower:
+            setPowerState(PowerState::Fire);
+            break;
+        case ItemType::Coin:
+            break; // Coins geben keinen Power-up-Effekt, nur Punkte (siehe InteractionSystem)
+    }
+}
+
+bool Player::takeDamage() {
+    if (isInvulnerable()) {
+        return false; // Treffer wird ignoriert, keine erneute Herabstufung
+    }
+    switch (m_powerState) {
+        case PowerState::Fire:
+            setPowerState(PowerState::Big);
+            m_invulnerabilityTimer = INVULNERABILITY_DURATION;
+            return false;
+        case PowerState::Big:
+            setPowerState(PowerState::Small);
+            m_invulnerabilityTimer = INVULNERABILITY_DURATION;
+            return false;
+        case PowerState::Small:
+            return true; // Bereits Small getroffen -> Tod. Game kuemmert sich um Leben/Respawn.
+    }
+    return true;
+}
+
+bool Player::consumeFireballRequest() noexcept {
+    if (!m_fireballRequested) {
+        return false;
+    }
+    m_fireballRequested = false;
+    return true;
+}
+
+sf::Vector2f Player::getFireballSpawnPosition() const {
+    const float offsetX = m_facingRight ? getSize().x : -Player::SIZE.x / 2.f;
+    return sf::Vector2f(getPosition().x + offsetX, getPosition().y + getSize().y / 2.f);
+}
+
+void Player::respawn(sf::Vector2f position) {
+    setPosition(position);
+    setVelocity({0.f, 0.f});
+    m_alive = true;
+    m_onGround = false;
+    m_invulnerabilityTimer = 0.f;
+    m_fireballRequested = false;
+    setPowerState(PowerState::Small);
+    setState(std::make_unique<IdleState>());
 }

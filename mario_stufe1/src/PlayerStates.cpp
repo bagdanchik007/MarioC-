@@ -148,6 +148,7 @@ void AttackState::enter(Player& player) {
     player.getAnimationController().play("attack", /*forceRestart=*/true);
     player.stopHorizontal(); // Mario bleibt beim Angriff stehen (Design-Entscheidung).
     m_elapsed = 0.f;
+    player.requestFireball(); // No-op, falls PowerState != Fire (siehe Player::requestFireball).
 }
 
 void AttackState::update(Player& player, float deltaTime) {

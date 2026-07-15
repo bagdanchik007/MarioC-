@@ -1,7 +1,6 @@
 #include "../include/Game.h"
 #include "../include/Commands.h"
-#include "../include/CollisionSystem.h"
-#include "../include/InteractionSystem.h"
+#include "../include/GameStates.h"
 #include <memory>
 
 namespace {
@@ -36,7 +35,7 @@ std::vector<std::string> buildDemoLevelLayout() {
 } // namespace
 
 Game::Game()
-    : m_window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Mario Clone - Etappe 3")
+    : m_window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Mario Clone - Etappe 4")
     , m_level(buildDemoLevelLayout(), TILE_SIZE)
     , m_player(m_level.getPlayerSpawn())
     , m_camera(sf::Vector2f(static_cast<float>(WINDOW_WIDTH), static_cast<float>(WINDOW_HEIGHT)),
@@ -50,6 +49,9 @@ Game::Game()
     m_input.bindOnPressed(sf::Keyboard::X,      std::make_unique<AttackCommand>());
 
     spawnDemoEntities();
+
+    m_currentState = std::make_unique<MenuState>();
+    m_currentState->enter(*this);
 }
 
 void Game::spawnDemoEntities() {
@@ -60,9 +62,23 @@ void Game::spawnDemoEntities() {
     m_enemies.add(std::make_unique<Enemy>(EnemyType::Goomba,
         sf::Vector2f(35.f * TILE_SIZE, floorRow * TILE_SIZE)));
 
-    // Coin ueber der schwebenden Plattform (col 28-33, siehe buildDemoLevelLayout)
-    m_coins.add(std::make_unique<Coin>(sf::Vector2f(30.f * TILE_SIZE, (floorRow - 5.f) * TILE_SIZE)));
-    m_coins.add(std::make_unique<Coin>(sf::Vector2f(10.f * TILE_SIZE, (floorRow - 1.f) * TILE_SIZE)));
+    // Items ueber der schwebenden Plattform (col 28-33) und auf dem Boden.
+    m_items.add(std::make_unique<Item>(ItemType::Coin,
+        sf::Vector2f(30.f * TILE_SIZE, (floorRow - 5.f) * TILE_SIZE)));
+    m_items.add(std::make_unique<Item>(ItemType::Coin,
+        sf::Vector2f(10.f * TILE_SIZE, (floorRow - 1.f) * TILE_SIZE)));
+    m_items.add(std::make_unique<Item>(ItemType::Mushroom,
+        sf::Vector2f(6.f * TILE_SIZE, (floorRow - 1.f) * TILE_SIZE)));
+    m_items.add(std::make_unique<Item>(ItemType::FireFlower,
+        sf::Vector2f(31.f * TILE_SIZE, (floorRow - 5.f) * TILE_SIZE)));
+}
+
+void Game::setState(std::unique_ptr<IGameState> newState) {
+    if (m_currentState) {
+        m_currentState->exit(*this);
+    }
+    m_currentState = std::move(newState);
+    m_currentState->enter(*this);
 }
 
 void Game::run() {
@@ -80,52 +96,27 @@ void Game::processEvents() {
         if (event.type == sf::Event::Closed) {
             m_window.close();
         }
-        m_input.handleEvent(event, m_player);
+        m_currentState->handleEvent(*this, event);
     }
 }
 
 void Game::update(float deltaTime) {
-    m_input.pollContinuousInput(m_player);
-
-    // 1) Player: Gravitation + State-Update (reagiert auf onGround vom LETZTEN Frame).
-    m_player.update(deltaTime);
-    const CollisionResult playerCollision = CollisionSystem::resolve(m_player, m_level.getTilemap(), deltaTime);
-    m_player.setOnGround(playerCollision.onGround);
-
-    // 2) Enemies: gleiche Physik-Pipeline wie der Player, wiederverwendet
-    //    ueber CollisionSystem (arbeitet auf Entity&, kennt weder Player noch Enemy).
-    for (auto& enemyPtr : m_enemies.getAll()) {
-        Enemy& enemy = *enemyPtr;
-        enemy.update(deltaTime);
-        const CollisionResult enemyCollision = CollisionSystem::resolve(enemy, m_level.getTilemap(), deltaTime);
-        enemy.setOnGround(enemyCollision.onGround);
-        enemy.setHitWall(enemyCollision.hitWall);
-    }
-
-    // 3) Coins: keine Physik/Kollision noetig, nur eigenes Update (Schweb-Animation).
-    m_coins.update(deltaTime);
-
-    // 4) Interaktionen: NACH der Bewegung, damit Positionen fuer diesen Frame final sind.
-    InteractionSystem::resolvePlayerEnemies(m_player, m_enemies.getAll());
-    m_coinCount += InteractionSystem::resolvePlayerCoins(m_player, m_coins.getAll());
-
-    // 5) Tote Entities entfernen (erst NACH den Interaktionen, die isAlive() lesen).
-    m_enemies.removeDead();
-    m_coins.removeDead();
-
-    m_camera.follow(m_player.getPosition(), deltaTime);
-
-    m_window.setTitle("Mario Clone - Etappe 3 | Coins: " + std::to_string(m_coinCount));
+    m_currentState->update(*this, deltaTime);
 }
 
 void Game::render() {
-    m_window.clear(sf::Color(92, 148, 252)); // Mario-typisches Himmelblau
-    m_window.setView(m_camera.getView());
+    m_currentState->render(*this, m_window);
+}
 
-    m_level.render(m_window);
-    m_coins.render(m_window);
-    m_enemies.render(m_window);
-    m_player.render(m_window);
+void Game::resetGame() {
+    m_player.respawn(m_level.getPlayerSpawn());
+    m_enemies.clear();
+    m_items.clear();
+    m_fireballs.clear();
+    spawnDemoEntities();
 
-    m_window.display();
+    m_score = 0;
+    m_coinCount = 0;
+    m_lives = STARTING_LIVES;
+    resetTimer();
 }

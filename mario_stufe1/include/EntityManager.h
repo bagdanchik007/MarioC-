@@ -49,6 +49,9 @@ public:
     std::vector<std::unique_ptr<T>>& getAll() noexcept { return m_entities; }
     std::size_t count() const noexcept { return m_entities.size(); }
 
+    // Wird von Game::resetGame() genutzt (GameOver/LevelComplete -> Neustart).
+    void clear() noexcept { m_entities.clear(); }
+
 private:
     std::vector<std::unique_ptr<T>> m_entities;
 };

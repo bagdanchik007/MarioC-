@@ -4,24 +4,33 @@
 
 class Player;
 class Enemy;
-class Coin;
+class Item;
+class Fireball;
 
-// Kapselt alle Interaktionen zwischen Player und anderen Entities.
-// Bewusst ein EIGENES System statt Interaktionslogik in Player/Enemy/Coin zu
-// verstreuen: "was passiert bei Kontakt" ist Spielregel-Logik, keine Physik
-// (das ist CollisionSystem) und keine Objekteigenschaft (das waere in
-// Player/Enemy selbst schlecht gekapselt, da beide Seiten involviert sind).
+// Ergebnis des Einsammelns von Items in einem Frame.
+struct ItemPickupResult {
+    int coinsCollected = 0;
+    int scoreGained = 0;
+};
+
+// Kapselt alle Interaktionen zwischen Player/Fireball und anderen Entities.
+// Eigenes System statt Interaktionslogik in Player/Enemy/Item zu verstreuen:
+// "was passiert bei Kontakt" ist Spielregel-Logik, kein Bestandteil der
+// beteiligten Objekte selbst (die kennen sich gegenseitig nicht).
 class InteractionSystem {
 public:
-    // Prueft den Player gegen alle lebenden Enemies. Bei Ueberlappung:
-    // Stomp (Player faellt von oben) -> Enemy::squish() + kleiner Bounce,
-    // sonst -> Kontaktschaden (aktuell nur Knockback, echtes Health-System
-    // kommt in Etappe 4).
-    static void resolvePlayerEnemies(Player& player, std::vector<std::unique_ptr<Enemy>>& enemies);
+    // Stomp -> Enemy::squish() + Punkte + Bounce. Kontakt von der Seite ->
+    // Player::takeDamage() + Knockback. Rueckgabe: in diesem Frame erzielte Punkte.
+    static int resolvePlayerEnemies(Player& player, std::vector<std::unique_ptr<Enemy>>& enemies);
 
-    // Prueft den Player gegen alle lebenden Coins und sammelt beruehrte ein.
-    // Rueckgabe: Anzahl der in diesem Frame frisch eingesammelten Coins.
-    static int resolvePlayerCoins(Player& player, std::vector<std::unique_ptr<Coin>>& coins);
+    // Sammelt beruehrte Items ein und wendet ihren Effekt auf den Player an
+    // (Coin -> nur Punkte, Mushroom/FireFlower -> Player::applyPowerUp).
+    static ItemPickupResult resolvePlayerItems(Player& player, std::vector<std::unique_ptr<Item>>& items);
+
+    // Fireball trifft Enemy -> Enemy::squish() + Fireball verbraucht sich.
+    // Rueckgabe: in diesem Frame erzielte Punkte.
+    static int resolveFireballEnemies(std::vector<std::unique_ptr<Fireball>>& fireballs,
+                                       std::vector<std::unique_ptr<Enemy>>& enemies);
 
 private:
     // Stomp-Erkennung: Player bewegt sich abwaerts UND seine untere Kante
