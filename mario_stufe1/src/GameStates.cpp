@@ -38,9 +38,19 @@ void PlayingState::enter(Game& game) {
 }
 
 void PlayingState::handleEvent(Game& game, const sf::Event& event) {
-    if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape) {
-        game.setState(std::make_unique<PausedState>());
-        return;
+    if (event.type == sf::Event::KeyPressed) {
+        if (event.key.code == sf::Keyboard::Escape) {
+            game.setState(std::make_unique<PausedState>());
+            return;
+        }
+        if (event.key.code == sf::Keyboard::F5) {
+            game.saveGame("savegame.json"); // Rueckgabewert bewusst ignoriert -
+            return;                          // ein fehlgeschlagener Save ist hier kein Grund zum Abbruch.
+        }
+        if (event.key.code == sf::Keyboard::F9) {
+            game.loadGame("savegame.json"); // Ebenso: kein Spielstand vorhanden -> einfach nichts tun.
+            return;
+        }
     }
     // Diskrete Aktionen (Jump/Attack) nur waehrend des Spielens verarbeiten.
     game.getInput().handleEvent(event, game.getPlayer());
@@ -67,8 +77,25 @@ void PlayingState::update(Game& game, float deltaTime) {
     }
 
     // 2) Enemies: gleiche Physik-Pipeline, wiederverwendet ueber CollisionSystem.
+    //
+    // Etappe 6 - Optimierung: einfaches Culling. Bei nur 2 Gegnern in einem
+    // 50-Tile-Level macht das keinen messbaren Unterschied, aber das Muster
+    // zahlt sich aus, sobald ein Level viele Dutzend Gegner hat, die weit
+    // ausserhalb des Bildschirms warten (klassisches Update-Distanz-Problem
+    // in Plattformern). Statt jeden Gegner jeden Frame zu simulieren, wird
+    // nur simuliert, wer sich (mit Rand-Marge) im sichtbaren Bereich befindet.
+    sf::FloatRect activeBounds = game.getCamera().getViewBounds();
+    constexpr float CULL_MARGIN = 200.f;
+    activeBounds.left -= CULL_MARGIN;
+    activeBounds.top -= CULL_MARGIN;
+    activeBounds.width += CULL_MARGIN * 2.f;
+    activeBounds.height += CULL_MARGIN * 2.f;
+
     for (auto& enemyPtr : game.getEnemies().getAll()) {
         Enemy& enemy = *enemyPtr;
+        if (!activeBounds.intersects(enemy.getBounds())) {
+            continue; // ausserhalb des aktiven Bereichs - diesen Frame nicht simulieren
+        }
         enemy.update(deltaTime);
         const CollisionResult enemyCollision = CollisionSystem::resolve(enemy, level.getTilemap(), deltaTime);
         enemy.setOnGround(enemyCollision.onGround);

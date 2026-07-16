@@ -11,6 +11,10 @@ public:
     void follow(sf::Vector2f targetPosition, float deltaTime);
     const sf::View& getView() const noexcept { return m_view; }
 
+    // Etappe 6: Sichtbereich der Kamera als Rechteck - genutzt fuer einfaches
+    // Culling (Enemies weit ausserhalb der Sicht werden nicht simuliert).
+    sf::FloatRect getViewBounds() const;
+
     void setWorldBounds(sf::FloatRect bounds) noexcept { m_worldBounds = bounds; }
 
 private:

@@ -1,6 +1,7 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include <memory>
+#include <string>
 #include "Player.h"
 #include "InputHandler.h"
 #include "Level.h"
@@ -13,6 +14,8 @@
 #include "EventBus.h"
 #include "SoundManager.h"
 #include "ParticleSystem.h"
+#include "LevelData.h"
+#include "SaveData.h"
 
 // Game: Wurzel-Klasse UND Kontext der Game State Machine. Haelt alle
 // Top-Level-Systeme (Fenster, Welt, Meta-Daten wie Score/Leben/Timer) und
@@ -56,6 +59,12 @@ public:
     // zurueck (genutzt von GameOverState/LevelCompleteState bei Neustart).
     void resetGame();
 
+    // Etappe 6: Speichert/laedt Score, Muenzen, Leben, Power-Zustand und
+    // Spielerposition als JSON-Datei. Rueckgabe false bei Datei-/Parse-Fehlern
+    // (siehe SaveManager) - der Aufrufer (PlayingState) ignoriert das einfach.
+    bool saveGame(const std::string& filepath) const;
+    bool loadGame(const std::string& filepath);
+
     static constexpr int STARTING_LIVES = 3;
     static constexpr float LEVEL_TIME_LIMIT = 200.f;
     static constexpr float TILE_SIZE = 32.f;
@@ -70,8 +79,10 @@ private:
     sf::RenderWindow m_window;
     sf::Clock m_clock;
 
-    // Deklarationsreihenfolge = Konstruktionsreihenfolge: m_level muss vor
-    // m_player existieren (Player braucht m_level.getPlayerSpawn()).
+    // Deklarationsreihenfolge = Konstruktionsreihenfolge: m_levelData muss vor
+    // m_level existieren (Level braucht die geladenen Tile-Daten), m_level vor
+    // m_player (Player braucht m_level.getPlayerSpawn()).
+    LevelData m_levelData;
     Level m_level;
     Player m_player;
     Camera m_camera;

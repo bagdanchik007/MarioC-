@@ -19,16 +19,35 @@ set(SFML_BUILD_DOC OFF CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(SFML)
 
+# --- nlohmann/json fuer datengetriebenes Level-Laden + Save/Load (Etappe 6) ---
+FetchContent_Declare(
+    nlohmann_json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG        v3.11.3
+    GIT_SHALLOW    ON
+)
+FetchContent_MakeAvailable(nlohmann_json)
+
 file(GLOB SOURCES ${CMAKE_SOURCE_DIR}/src/*.cpp)
 
 add_executable(MarioClone ${SOURCES})
 
 target_include_directories(MarioClone PRIVATE ${CMAKE_SOURCE_DIR}/include)
-target_link_libraries(MarioClone PRIVATE sfml-graphics sfml-window sfml-system sfml-audio)
+target_link_libraries(MarioClone PRIVATE sfml-graphics sfml-window sfml-system sfml-audio
+                                          nlohmann_json::nlohmann_json)
 
 target_compile_options(MarioClone PRIVATE
     $<$<CXX_COMPILER_ID:MSVC>:/W4>
     $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra>
+)
+
+# assets/ (Level-JSON, spaeter Sounds/Sprites) neben die .exe kopieren - ohne
+# das findet LevelLoader/SoundManager die Dateien zur Laufzeit nicht, da
+# relative Pfade vom Arbeitsverzeichnis der .exe aus aufgeloest werden.
+add_custom_command(TARGET MarioClone POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/assets
+        $<TARGET_FILE_DIR:MarioClone>/assets
 )
 
 # Windows: SFML-DLLs (bei dynamischem Build) neben die .exe kopieren,

@@ -32,3 +32,9 @@ void Camera::follow(sf::Vector2f targetPosition, float deltaTime) {
 
     m_view.setCenter(newCenter);
 }
+
+sf::FloatRect Camera::getViewBounds() const {
+    const sf::Vector2f center = m_view.getCenter();
+    const sf::Vector2f size = m_view.getSize();
+    return sf::FloatRect(center.x - size.x / 2.f, center.y - size.y / 2.f, size.x, size.y);
+}
