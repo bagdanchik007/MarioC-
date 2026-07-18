@@ -9,7 +9,7 @@
 // MenuState
 // ============================================================================
 void MenuState::enter(Game& game) {
-    game.getWindow().setTitle("Mario Clone - MENU | Enter zum Start");
+    game.getWindow().setTitle("Mario Clone");
 }
 
 void MenuState::handleEvent(Game& game, const sf::Event& event) {
@@ -22,11 +22,9 @@ void MenuState::update(Game& /*game*/, float /*deltaTime*/) {
     // Bewusst leer: im Menue passiert keine Simulation, nur Warten auf Input.
 }
 
-void MenuState::render(Game& /*game*/, sf::RenderWindow& window) {
-    // Kein Font-Asset vorhanden (Etappe 5 bringt echtes HUD/Text) - deshalb
-    // hier nur eine Farbflaeche als Platzhalter; der eigentliche Text steht
-    // im Fenstertitel (siehe enter()).
+void MenuState::render(Game& game, sf::RenderWindow& window) {
     window.clear(sf::Color(20, 20, 60));
+    game.getHUD().drawCenteredMessage(window, "MARIO CLONE", "Enter zum Start");
     window.display();
 }
 
@@ -34,7 +32,7 @@ void MenuState::render(Game& /*game*/, sf::RenderWindow& window) {
 // PlayingState - die eigentliche Gameplay-Simulation, vorher in Game::update()
 // ============================================================================
 void PlayingState::enter(Game& game) {
-    game.getWindow().setTitle("Mario Clone - Etappe 4");
+    game.getWindow().setTitle("Mario Clone");
 }
 
 void PlayingState::handleEvent(Game& game, const sf::Event& event) {
@@ -158,14 +156,6 @@ void PlayingState::update(Game& game, float deltaTime) {
         game.setState(std::make_unique<LevelCompleteState>());
         return;
     }
-
-    // HUD-Ersatz ohne Font-Asset: Statuszeile im Fenstertitel (Etappe 5 bringt
-    // ein echtes On-Screen-HUD mit Textrendering).
-    game.getWindow().setTitle(
-        "Mario Clone - Etappe 4 | Leben: " + std::to_string(game.getLives()) +
-        " | Muenzen: " + std::to_string(game.getCoinCount()) +
-        " | Punkte: " + std::to_string(game.getScore()) +
-        " | Zeit: " + std::to_string(static_cast<int>(game.getTimeRemaining())));
 }
 
 void PlayingState::render(Game& game, sf::RenderWindow& window) {
@@ -179,6 +169,11 @@ void PlayingState::render(Game& game, sf::RenderWindow& window) {
     game.getPlayer().render(window);
     game.getParticles().render(window);
 
+    // HUD zuletzt zeichnen und in eigener Bildschirm-View (siehe HUD-Klasse) -
+    // muss ueber allem liegen und darf nicht mit der Welt-Kamera scrollen.
+    game.getHUD().drawGameplayHUD(window, game.getLives(), game.getCoinCount(),
+                                   game.getScore(), game.getTimeRemaining());
+
     window.display();
 }
 
@@ -186,7 +181,7 @@ void PlayingState::render(Game& game, sf::RenderWindow& window) {
 // PausedState
 // ============================================================================
 void PausedState::enter(Game& game) {
-    game.getWindow().setTitle("Mario Clone - PAUSE (Escape zum Fortsetzen)");
+    game.getWindow().setTitle("Mario Clone - Pause");
 }
 
 void PausedState::handleEvent(Game& game, const sf::Event& event) {
@@ -214,6 +209,8 @@ void PausedState::render(Game& game, sf::RenderWindow& window) {
     overlay.setFillColor(sf::Color(0, 0, 0, 150));
     window.draw(overlay);
 
+    game.getHUD().drawCenteredMessage(window, "PAUSE", "Escape zum Fortsetzen");
+
     window.display();
 }
 
@@ -221,7 +218,7 @@ void PausedState::render(Game& game, sf::RenderWindow& window) {
 // GameOverState
 // ============================================================================
 void GameOverState::enter(Game& game) {
-    game.getWindow().setTitle("Mario Clone - GAME OVER | Enter fuer Neustart");
+    game.getWindow().setTitle("Mario Clone - Game Over");
 }
 
 void GameOverState::handleEvent(Game& game, const sf::Event& event) {
@@ -233,8 +230,10 @@ void GameOverState::handleEvent(Game& game, const sf::Event& event) {
 
 void GameOverState::update(Game& /*game*/, float /*deltaTime*/) {}
 
-void GameOverState::render(Game& /*game*/, sf::RenderWindow& window) {
+void GameOverState::render(Game& game, sf::RenderWindow& window) {
     window.clear(sf::Color(120, 0, 0));
+    game.getHUD().drawCenteredMessage(window, "GAME OVER",
+        "Punkte: " + std::to_string(game.getScore()) + " | Enter fuer Neustart");
     window.display();
 }
 
@@ -242,8 +241,7 @@ void GameOverState::render(Game& /*game*/, sf::RenderWindow& window) {
 // LevelCompleteState
 // ============================================================================
 void LevelCompleteState::enter(Game& game) {
-    game.getWindow().setTitle("Mario Clone - LEVEL GESCHAFFT! Punkte: "
-        + std::to_string(game.getScore()) + " | Enter fuers Menue");
+    game.getWindow().setTitle("Mario Clone - Level geschafft!");
 }
 
 void LevelCompleteState::handleEvent(Game& game, const sf::Event& event) {
@@ -255,7 +253,9 @@ void LevelCompleteState::handleEvent(Game& game, const sf::Event& event) {
 
 void LevelCompleteState::update(Game& /*game*/, float /*deltaTime*/) {}
 
-void LevelCompleteState::render(Game& /*game*/, sf::RenderWindow& window) {
+void LevelCompleteState::render(Game& game, sf::RenderWindow& window) {
     window.clear(sf::Color(0, 120, 0));
+    game.getHUD().drawCenteredMessage(window, "LEVEL GESCHAFFT!",
+        "Punkte: " + std::to_string(game.getScore()) + " | Enter fuers Menue");
     window.display();
 }

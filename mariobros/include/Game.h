@@ -16,6 +16,7 @@
 #include "ParticleSystem.h"
 #include "LevelData.h"
 #include "SaveData.h"
+#include "HUD.h"
 
 // Game: Wurzel-Klasse UND Kontext der Game State Machine. Haelt alle
 // Top-Level-Systeme (Fenster, Welt, Meta-Daten wie Score/Leben/Timer) und
@@ -44,6 +45,7 @@ public:
     EventBus& getEvents() noexcept { return m_events; }
     SoundManager& getSounds() noexcept { return m_sounds; }
     ParticleSystem& getParticles() noexcept { return m_particles; }
+    const HUD& getHUD() const noexcept { return m_hud; }
 
     int getScore() const noexcept { return m_score; }
     void addScore(int amount) noexcept { m_score += amount; }
@@ -95,6 +97,7 @@ private:
     EventBus m_events;
     SoundManager m_sounds;
     ParticleSystem m_particles;
+    HUD m_hud;
 
     int m_score{0};
     int m_coinCount{0};

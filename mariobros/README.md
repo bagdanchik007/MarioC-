@@ -16,6 +16,10 @@ Grundarchitektur bis zu datengetriebenen Levels und einem Save/Load-System.
 - **Score, Münzen, Leben, Timer**
 - **Partikeleffekte, Event-System, Sound-Manager** (Etappe 5)
 - **Datengetriebene Levels** über JSON + **Save/Load** (Etappe 6)
+- **On-Screen-HUD** (echtes Textrendering statt Fenstertitel) mit
+  DejaVu Sans Bold (frei lizenziert, liegt unter `assets/fonts/` bei)
+
+**→ [Screenshots ansehen](SCREENSHOTS.md)**
 
 ## Voraussetzungen
 
@@ -86,8 +90,6 @@ etc.) stehen direkt als Kommentar über der jeweiligen Klasse im Header.
   `AnimationController`- und `SoundManager`-System sind aber vollständig
   fertig verdrahtet — sobald echte Spritesheets/`.wav`-Dateien unter den
   erwarteten Pfaden liegen, funktionieren sie ohne Codeänderung.
-- **Kein On-Screen-HUD** (kein Font-Asset vorhanden) — Status (Leben,
-  Münzen, Punkte, Zeit) steht im Fenstertitel.
 - **Ein Level** vorhanden (`assets/levels/level1.json`) — weitere Level
   lassen sich als zusätzliche JSON-Dateien nach demselben Schema anlegen.
 
